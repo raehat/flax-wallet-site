@@ -69,6 +69,22 @@ contract InstructionSender {
         revert("Extension ID not found.");
     }
 
+    /// @notice Ask the TEE to report the XRP testnet address it currently controls.
+    ///         Anyone can call this — it costs the standard instruction fee and
+    ///         reveals no secret, only the (already-public-once-funded) address.
+    function requestAddress() external payable {
+        // The registry rejects empty instruction messages, so send a
+        // placeholder — the handler ignores its content for this command.
+        _send(OP_COMMAND_ADDRESS, bytes("ADDR"));
+    }
+
+    /// @notice Ask the TEE to pay out 10% of its current XRP balance to `_xrpAddress`.
+    /// @param _xrpAddress The recipient's XRP Ledger classic address, as ASCII bytes
+    ///        (e.g. bytes("rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH")).
+    function award(bytes calldata _xrpAddress) external payable {
+        _send(OP_COMMAND_AWARD, _xrpAddress);
+    }
+
     function _send(bytes32 _opCommand, bytes memory _message) internal {
         address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
         address[] memory cosigners = new address[](0);
