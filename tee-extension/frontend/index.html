@@ -206,5 +206,195 @@
 
 </div>
 
+<script>
+const DEFAULTS = {
+  contractAddr: "0x29057Eb605915003eb7CA918232d75D2cd0e2eA7",
+  proxyUrl: "https://unmellifluently-undebating-anamaria.ngrok-free.dev",
+  feeAmount: "0.01",
+};
+
+const COSTON2 = {
+  chainId: "0x72", // 114
+  chainName: "Flare Testnet Coston2",
+  nativeCurrency: { name: "Coston2 Flare", symbol: "C2FLR", decimals: 18 },
+  rpcUrls: ["https://coston2-api.flare.network/ext/C/rpc"],
+  blockExplorerUrls: ["https://coston2-explorer.flare.network/"],
+};
+
+const ABI = [
+  "function requestAddress() external payable",
+  "function award(bytes _xrpAddress) external payable",
+  "function setExtensionId() external",
+  "event InstructionSent(bytes32 indexed instructionId, bytes32 opCommand, address indexed caller)",
+];
+
+const $ = (id) => document.getElementById(id);
+const logEl = $("log");
+const detailsEl = $("details");
+
+function log(msg, cls) {
+  const time = new Date().toLocaleTimeString();
+  const span = document.createElement("div");
+  if (cls) span.className = cls;
+  span.textContent = `[${time}] ${msg}`;
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+  console.log(`[${time}] ${msg}`);
+}
+
+function setButtonBusy(btn, busy, label) {
+  btn.disabled = busy;
+  btn.classList.toggle("spin", busy);
+  if (busy) { btn.dataset.label = btn.dataset.label || btn.textContent; btn.textContent = label; }
+  else { btn.textContent = btn.dataset.label || btn.textContent; }
+}
+
+// Prefill from known deployment, fall back to localStorage overrides.
+for (const id of ["contractAddr", "proxyUrl", "feeAmount"]) {
+  const el = $(id);
+  el.value = localStorage.getItem(id) || DEFAULTS[id] || "";
+  el.addEventListener("change", () => localStorage.setItem(id, el.value));
+}
+
+let provider, signer, contract;
+
+async function connect() {
+  if (!window.ethereum) { alert("MetaMask (or another injected wallet) is required."); return; }
+  const btn = $("connectBtn");
+  setButtonBusy(btn, true, "Connecting…");
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    try {
+      await window.ethereum.request({ method: "wallet_addEthereumChain", params: [COSTON2] });
+    } catch (e) {
+      log(`could not add/switch to Coston2 automatically: ${e.message}`);
+    }
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    const pill = $("accountPill");
+    pill.classList.add("on");
+    pill.innerHTML = `<span class="dot"></span>${addr.slice(0, 6)}…${addr.slice(-4)}`;
+    detailsEl.textContent = `Signer: ${addr}\nChain: Coston2 (114)\nRPC: ${COSTON2.rpcUrls[0]}`;
+    log("wallet connected", "ok");
+  } catch (e) {
+    log(`connect failed: ${e.message}`, "err");
+  } finally {
+    setButtonBusy(btn, false);
+  }
+}
+
+function getContract() {
+  const addr = $("contractAddr").value.trim();
+  if (!ethers.isAddress(addr)) throw new Error("enter a valid contract address first");
+  if (!signer) throw new Error("connect your wallet first");
+  return new ethers.Contract(addr, ABI, signer);
+}
+
+function getProxyUrl() {
+  const url = $("proxyUrl").value.trim().replace(/\/$/, "");
+  if (!url) throw new Error("enter the extension proxy URL first");
+  return url;
+}
+
+function getFeeWei() {
+  const v = $("feeAmount").value.trim() || "0";
+  return ethers.parseEther(v);
+}
+
+function hexToUtf8(hex) {
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const bytes = new Uint8Array(clean.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) ?? []);
+  return new TextDecoder().decode(bytes);
+}
+
+async function sendAndGetInstructionId(txPromise, contract) {
+  const tx = await txPromise;
+  log(`tx sent: ${tx.hash}`);
+  const receipt = await tx.wait();
+  for (const entry of receipt.logs) {
+    try {
+      const parsed = contract.interface.parseLog(entry);
+      if (parsed && parsed.name === "InstructionSent") return parsed.args.instructionId;
+    } catch (_) {}
+  }
+  throw new Error("InstructionSent event not found in receipt logs");
+}
+
+async function pollActionResult(proxyUrl, instructionId, { retries = 30, delayMs = 2000 } = {}) {
+  const url = `${proxyUrl}/action/result/${instructionId}`;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const json = await res.json();
+        const result = json.result ?? json;
+        if (result.status === 1 || result.status === 0) return result;
+        log(`instruction pending (status=${result.status})...`);
+      }
+    } catch (e) {
+      log(`poll attempt failed: ${e.message}`);
+    }
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  throw new Error("timed out waiting for TEE action result");
+}
+
+async function fetchAddress() {
+  const btn = $("getAddressBtn");
+  setButtonBusy(btn, true, "Requesting…");
+  try {
+    const c = getContract();
+    const proxyUrl = getProxyUrl();
+    log("requesting address from TEE...");
+    const id = await sendAndGetInstructionId(c.requestAddress({ value: getFeeWei() }), c);
+    log(`instruction id: ${id}`);
+    const result = await pollActionResult(proxyUrl, id);
+    if (result.status !== 1) throw new Error(result.log || "unknown error");
+    const address = hexToUtf8(result.data);
+    const box = $("xrpAddress");
+    box.textContent = address;
+    box.className = "result-box ok";
+    log(`wallet address: ${address}`, "ok");
+  } catch (e) {
+    log(`error: ${e.message}`, "err");
+  } finally {
+    setButtonBusy(btn, false);
+  }
+}
+
+async function requestAward() {
+  const btn = $("awardBtn");
+  try {
+    const target = $("targetAddr").value.trim();
+    if (!target.startsWith("r")) throw new Error("enter a valid XRP classic address");
+    setButtonBusy(btn, true, "Requesting…");
+    const c = getContract();
+    const proxyUrl = getProxyUrl();
+    log(`requesting 10% award to ${target}...`);
+    const addrBytes = ethers.toUtf8Bytes(target);
+    const id = await sendAndGetInstructionId(c.award(addrBytes, { value: getFeeWei() }), c);
+    log(`instruction id: ${id}`);
+    const result = await pollActionResult(proxyUrl, id);
+    if (result.status !== 1) throw new Error(result.log || "unknown error");
+    const payload = JSON.parse(hexToUtf8(result.data));
+    const box = $("awardResult");
+    box.className = "result-box ok";
+    box.innerHTML =
+      `Sent ${(payload.amountDrops / 1_000_000).toFixed(6)} XRP<br>` +
+      `Tx: <a class="footer-link" href="https://testnet.xrpl.org/transactions/${payload.txHash}" target="_blank" rel="noopener">${payload.txHash}</a>`;
+    log(`award sent: ${payload.txHash}`, "ok");
+  } catch (e) {
+    log(`error: ${e.message}`, "err");
+  } finally {
+    setButtonBusy(btn, false);
+  }
+}
+
+$("connectBtn").addEventListener("click", connect);
+$("getAddressBtn").addEventListener("click", fetchAddress);
+$("awardBtn").addEventListener("click", requestAward);
+log("ready — connect your wallet to begin");
+</script>
 </body>
 </html>
