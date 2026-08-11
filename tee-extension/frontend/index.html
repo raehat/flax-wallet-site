@@ -135,5 +135,76 @@
 </style>
 </head>
 <body>
+<div class="wrap">
+
+  <header>
+    <div class="badge"><span class="dot"></span> Coston2 Testnet · Flare Confidential Compute</div>
+    <h1>TEE-Only XRP Wallet</h1>
+    <p class="sub">
+      The private key lives only inside a Flare Confidential Compute TEE and is never exported.
+      This page just sends instructions to it through a Coston2 smart contract and reads results
+      back from the extension proxy.
+    </p>
+  </header>
+
+  <div class="notice" id="statusNotice">
+    ⚠ Instruction delivery to the TEE is currently unreliable (a stale TEE identity issue on the
+    registry side) — calls may hang waiting for a result. Not a frontend bug.
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title"><span class="card-num">1</span>Connection</span>
+    </div>
+    <div class="row" style="margin-bottom: 4px;">
+      <button id="connectBtn">Connect Wallet</button>
+      <span class="pill" id="accountPill"><span class="dot"></span>not connected</span>
+    </div>
+
+    <label for="contractAddr">Contract address</label>
+    <input id="contractAddr" placeholder="0x..." />
+
+    <label for="proxyUrl">Extension proxy URL</label>
+    <input id="proxyUrl" placeholder="https://your-tunnel.ngrok-free.app" />
+
+    <label for="feeAmount">Fee per instruction (C2FLR)</label>
+    <input id="feeAmount" value="0.01" />
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title"><span class="card-num">2</span>Wallet Address</span>
+    </div>
+    <p class="desc">Fetch the TEE's current XRP testnet address, then fund it from the
+      <a class="footer-link" href="https://xrpl.org/xrp-testnet-faucet.html" target="_blank" rel="noopener">XRPL testnet faucet</a>.</p>
+    <button id="getAddressBtn">Fetch Current Address</button>
+    <div id="xrpAddress" class="result-box empty">Not fetched yet</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title"><span class="card-num">3</span>Claim 10% Award</span>
+    </div>
+    <p class="desc">Anyone can request 10% of the wallet's current XRP balance be sent to an address.</p>
+    <label for="targetAddr">Recipient XRP address</label>
+    <input id="targetAddr" placeholder="rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH" />
+    <button id="awardBtn">Request 10% Award</button>
+    <div id="awardResult" class="result-box empty">No award requested yet</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Activity Log</span>
+    </div>
+    <div id="log" class="log"></div>
+  </div>
+
+  <details>
+    <summary>Connection details</summary>
+    <div class="log" style="margin-top: 10px;" id="details"></div>
+  </details>
+
+</div>
+
 </body>
 </html>
