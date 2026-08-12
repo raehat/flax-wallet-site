@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="popup.css" />
+<title>Flax</title>
+</head>
+<body>
+
+<!-- ══════════════ SPLASH ══════════════ -->
+<div class="view active" id="view-splash">
+  <div class="splash">
+    <svg class="logo-mark lg" viewBox="0 0 100 100"><use href="#flaxmark"/></svg>
+    <div class="splash-name">Flax</div>
+    <div class="loader-bar"><div></div></div>
+  </div>
+</div>
+
+<!-- ══════════════ ONBOARDING ══════════════ -->
+<div class="view" id="view-onboarding">
+  <div class="onboard">
+    <svg class="logo-mark lg" viewBox="0 0 100 100"><use href="#flaxmark"/></svg>
+    <h1>Flax</h1>
+    <p class="tagline">The XRP wallet that puts your<br/>balance to work.</p>
+    <div class="onboard-feats">
+      <div class="feat"><span class="feat-ico">◈</span><div><b>Native yield</b><span>Earn on idle XRP, spend it anytime</span></div></div>
+      <div class="feat"><span class="feat-ico">⬡</span><div><b>Confidential Compute</b><span>Secured by Flare TEE attestation</span></div></div>
+      <div class="feat"><span class="feat-ico">⚡</span><div><b>Instant</b><span>3-second settlement on XRPL</span></div></div>
+    </div>
+    <button class="btn primary block" id="btn-create">Create new wallet</button>
+    <button class="btn ghost block" id="btn-goto-import">I already have one</button>
+  </div>
+</div>
+
+<!-- ══════════════ IMPORT ══════════════ -->
+<div class="view" id="view-import">
+  <div class="topbar"><button class="icon-btn back" data-nav="view-onboarding">‹</button><span class="topbar-title">Import wallet</span><span></span></div>
+  <div class="pad">
+    <label class="field-label">Family seed</label>
+    <input id="import-seed" class="input mono" placeholder="sEd…" autocomplete="off" spellcheck="false"/>
+    <p class="hint">Your seed is stored locally on this device and never leaves it.</p>
+    <button class="btn primary block" id="btn-import">Import wallet</button>
+  </div>
+</div>
+
+<!-- ══════════════ CREATING ══════════════ -->
+<div class="view" id="view-creating">
+  <div class="center-col">
+    <div class="spinner big"></div>
+    <h2 id="creating-title">Creating your wallet…</h2>
+    <p class="muted" id="creating-sub">Generating keys &amp; activating on XRPL</p>
+  </div>
+</div>
+
+<!-- logo symbol -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="flaxmark">
+      <rect x="16" y="14" width="62" height="16" rx="8" fill="#d83e64"/>
+      <rect x="16" y="40" width="40" height="16" rx="8" fill="#d83e64"/>
+      <rect x="14" y="69" width="62" height="16" rx="8" fill="#f08aa6" transform="rotate(-14 45 77)"/>
+    </g>
+  </defs>
+</svg>
+
+<script src="vendor/xrpl.js"></script>
+<script src="vendor/ethers.js"></script>
+<script src="fcc.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
