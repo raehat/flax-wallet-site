@@ -108,6 +108,102 @@
   </div>
 </div>
 
+<!-- ══════════════ SEND ══════════════ -->
+<div class="view" id="view-send">
+  <div class="topbar"><button class="icon-btn back" data-nav="view-home">‹</button><span class="topbar-title">Send XRP</span><span></span></div>
+  <div class="pad">
+    <label class="field-label">Recipient</label>
+    <input id="send-dest" class="input mono" placeholder="r…" autocomplete="off" spellcheck="false"/>
+    <label class="field-label">Amount</label>
+    <div class="amt-wrap">
+      <input id="send-amount" class="input amt" placeholder="0.00" inputmode="decimal"/>
+      <span class="amt-unit">XRP</span>
+      <button class="chip max" id="send-max">Max</button>
+    </div>
+    <div class="avail-line" id="send-avail"></div>
+    <div class="fcc-route hidden" id="fcc-route-note">
+      <span class="route-ico">◈</span>
+      <div><b id="fcc-route-amt"></b> will be settled from your yield reserve via Flare&nbsp;CC — no unstaking delay.</div>
+    </div>
+    <button class="btn primary block" id="btn-send-confirm">Review &amp; send</button>
+  </div>
+</div>
+
+<!-- ══════════════ YIELD MANAGE ══════════════ -->
+<div class="view" id="view-yieldmg">
+  <div class="topbar"><button class="icon-btn back" data-nav="view-home">‹</button><span class="topbar-title" id="yieldmg-title">Enable yield</span><span></span></div>
+  <div class="pad">
+    <div class="yield-hero">
+      <div class="apy-big">5.20%<span>APY</span></div>
+      <p id="yieldmg-sub">Move XRP into your yield reserve. It stays spendable — Flax settles payments from it instantly when needed.</p>
+    </div>
+    <label class="field-label" id="yieldmg-amt-label">Amount to yield</label>
+    <div class="amt-wrap">
+      <input id="yield-amount" class="input amt" placeholder="0.00" inputmode="decimal"/>
+      <span class="amt-unit">XRP</span>
+      <button class="chip max" id="yield-max">Max</button>
+    </div>
+    <div class="avail-line" id="yield-avail"></div>
+    <div class="split-info">
+      <div class="split-bar"><div class="split-a"></div><div class="split-b"></div></div>
+      <div class="split-legend">
+        <span><i class="sw a"></i>70% → FXRP yield strategies</span>
+        <span><i class="sw b"></i>30% liquid buffer</span>
+      </div>
+    </div>
+    <div class="tee-line">⬡ Executed inside attested TEE <span class="mono" id="tee-hash-tail"></span></div>
+    <button class="btn primary block" id="btn-yield-go">Confirm</button>
+  </div>
+</div>
+
+<!-- ══════════════ PROGRESS ══════════════ -->
+<div class="view" id="view-progress">
+  <div class="center-col">
+    <div class="steps" id="progress-steps"></div>
+  </div>
+</div>
+
+<!-- ══════════════ SUCCESS ══════════════ -->
+<div class="view" id="view-success">
+  <div class="center-col">
+    <div class="success-check">✓</div>
+    <h2 id="success-title">Done</h2>
+    <p class="muted" id="success-sub"></p>
+    <div class="tx-links" id="success-links"></div>
+    <button class="btn primary block" id="btn-success-done">Done</button>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS ══════════════ -->
+<div class="view" id="view-settings">
+  <div class="topbar"><button class="icon-btn back" data-nav="view-home">‹</button><span class="topbar-title">Settings</span><span></span></div>
+  <div class="pad scroll">
+    <div class="section-title">Wallet</div>
+    <div class="kv"><span>Address</span><span class="mono copyable" id="set-address">—</span></div>
+    <div class="kv"><span>Network</span><span>XRP Ledger</span></div>
+    <button class="btn ghost block sm-gap" id="btn-reveal-seed">Reveal seed</button>
+    <div class="seed-reveal mono hidden" id="seed-reveal"></div>
+
+    <div class="section-title">Flare Confidential Compute</div>
+    <div class="fcc-panel">
+      <div class="kv"><span>Status</span><span class="ok">● PRODUCTION</span></div>
+      <div class="kv"><span>TEE machine</span><span class="mono copyable" id="fcc-machine">—</span></div>
+      <div class="kv"><span>Extension ID</span><span class="mono" id="fcc-ext">—</span></div>
+      <div class="kv"><span>Code hash</span><span class="mono copyable" id="fcc-codehash">—</span></div>
+      <div class="kv"><span>Custody</span><span class="mono copyable" id="fcc-custody">—</span></div>
+      <div class="kv"><span>Custody buffer</span><span id="fcc-custody-bal">—</span></div>
+      <div class="kv"><span>FXRP</span><a class="mono link" id="fcc-fxrp" target="_blank" rel="noopener">—</a></div>
+      <div class="kv"><span>Yield vault</span><a class="mono link" id="fcc-vault" target="_blank" rel="noopener">—</a></div>
+      <div class="kv"><span>Vault TVL</span><span id="fcc-tvl">—</span></div>
+    </div>
+
+    <div class="section-title danger">Danger zone</div>
+    <button class="btn danger block" id="btn-reset">Remove wallet from this device</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <!-- logo symbol -->
 <svg width="0" height="0" style="position:absolute">
   <defs>
