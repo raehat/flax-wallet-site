@@ -52,6 +52,62 @@
   </div>
 </div>
 
+<!-- ══════════════ HOME ══════════════ -->
+<div class="view" id="view-home">
+  <div class="topbar home">
+    <div class="brand"><svg class="logo-mark sm" viewBox="0 0 100 100"><use href="#flaxmark"/></svg><span>Flax</span></div>
+    <div class="net-pill" id="fcc-pill"><span class="dot"></span>Flare CC</div>
+    <button class="icon-btn" id="btn-settings">⚙</button>
+  </div>
+
+  <div class="balance-wrap">
+    <div class="balance-label">Total balance</div>
+    <div class="balance" id="balance-total">—</div>
+    <div class="balance-sub" id="balance-sub"></div>
+    <div class="earn-pill hidden" id="earn-pill">
+      <span class="pulse"></span><span id="earn-pill-text">Earning 5.20% APY</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="action" id="btn-receive"><span class="action-ico">↓</span>Receive</button>
+    <button class="action" id="btn-send"><span class="action-ico">↑</span>Send</button>
+    <button class="action" id="btn-yield"><span class="action-ico">◈</span>Yield</button>
+  </div>
+
+  <!-- yield promo (off state) -->
+  <div class="yield-card promo hidden" id="yield-promo">
+    <div class="yc-head"><span class="yc-title">Put your XRP to work</span><span class="apy-chip">5.20% APY</span></div>
+    <p>Earn on your idle balance while keeping it spendable. Powered by Flare Confidential Compute.</p>
+    <button class="btn light" id="btn-enable-yield">Enable yield</button>
+  </div>
+
+  <!-- yield active card -->
+  <div class="yield-card active-card hidden" id="yield-active">
+    <div class="yc-head"><span class="yc-title"><span class="pulse"></span> Yield active</span><span class="apy-chip">5.20% APY</span></div>
+    <div class="yc-row"><span>Yielding</span><b id="yc-principal">—</b></div>
+    <div class="yc-row"><span>Earned</span><b class="earned" id="yc-earned">—</b></div>
+    <div class="yc-btns">
+      <button class="btn mini light" id="btn-add-yield">Add</button>
+      <button class="btn mini ghost2" id="btn-withdraw-yield">Withdraw</button>
+    </div>
+  </div>
+
+  <div class="section-title">Activity</div>
+  <div class="activity" id="activity-list"><div class="empty" id="activity-empty">No activity yet</div></div>
+</div>
+
+<!-- ══════════════ RECEIVE ══════════════ -->
+<div class="view" id="view-receive">
+  <div class="topbar"><button class="icon-btn back" data-nav="view-home">‹</button><span class="topbar-title">Receive XRP</span><span></span></div>
+  <div class="pad center">
+    <div class="addr-art"><svg class="logo-mark md" viewBox="0 0 100 100"><use href="#flaxmark"/></svg></div>
+    <div class="addr-box mono" id="receive-address">—</div>
+    <button class="btn primary block" id="btn-copy-address">Copy address</button>
+    <p class="hint center">Send only XRP on the XRP Ledger to this address.</p>
+  </div>
+</div>
+
 <!-- logo symbol -->
 <svg width="0" height="0" style="position:absolute">
   <defs>
