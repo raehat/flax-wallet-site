@@ -74,6 +74,51 @@ const FCC = (() => {
     vault = new ethers.Contract(CONFIG.VAULT_ADDRESS, VAULT_ABI, operator);
   }
 
+  // ---------------------------------------------------------------- utils
+  const dropsToWei = (drops) => BigInt(drops) * 10n ** 12n;
+  const weiToDrops = (wei) => BigInt(wei) / 10n ** 12n;
+  const userId = (xrpAddress) => ethers.keccak256(ethers.toUtf8Bytes(xrpAddress));
 
-  return { CONFIG, init };
+  async function custodyWallet() {
+    return xrpl.Wallet.fromSeed(CONFIG.CUSTODY_SEED);
+  }
+
+  async function xrplPayment(fromWallet, destination, drops, memo) {
+    const tx = {
+      TransactionType: "Payment",
+      Account: fromWallet.address,
+      Destination: destination,
+      Amount: String(drops),
+    };
+    if (memo) {
+      tx.Memos = [{ Memo: { MemoData: Array.from(new TextEncoder().encode(memo)).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase() } }];
+    }
+    const prepared = await xrplClient.autofill(tx);
+    const signed = fromWallet.sign(prepared);
+    const res = await xrplClient.submitAndWait(signed.tx_blob);
+    const code = res.result.meta?.TransactionResult;
+    if (code !== "tesSUCCESS") throw new Error(`XRPL payment failed: ${code}`);
+    return res.result.hash;
+  }
+
+  async function ensureAllowance(needWei) {
+    const current = await fxrp.allowance(CONFIG.OPERATOR_ADDRESS, CONFIG.VAULT_ADDRESS);
+    if (current < needWei) {
+      const tx = await fxrp.approve(CONFIG.VAULT_ADDRESS, ethers.MaxUint256);
+      await tx.wait();
+    }
+  }
+
+  async function burnOperatorBalance(xrplRef) {
+    const bal = await fxrp.balanceOf(CONFIG.OPERATOR_ADDRESS);
+    if (bal > 0n) {
+      const tx = await fxrp.burn(CONFIG.OPERATOR_ADDRESS, bal, xrplRef);
+      await tx.wait();
+      return bal;
+    }
+    return 0n;
+  }
+
+
+  return { CONFIG, init, userId, custodyWallet };
 })();
