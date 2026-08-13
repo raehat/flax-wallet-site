@@ -282,5 +282,193 @@ $("btn-success-done").addEventListener("click", async () => {
   renderHome();
 });
 
+// ───────────────────────────────────────── send
+$("btn-send").addEventListener("click", () => {
+  $("send-dest").value = ""; $("send-amount").value = "";
+  $("fcc-route-note").classList.add("hidden");
+  $("send-avail").textContent = `Available ${fmtXrp(spendable())} · Yield reserve ${fmtXrp(yieldedDrops())}`;
+  show("view-send");
+});
+$("send-max").addEventListener("click", () => {
+  $("send-amount").value = fmtXrp(spendable() + yieldedDrops()).replaceAll(",", "");
+  updateRouteNote();
+});
+$("send-amount").addEventListener("input", updateRouteNote);
+function updateRouteNote() {
+  const amt = parseXrp($("send-amount").value);
+  const note = $("fcc-route-note");
+  if (amt && amt > spendable() && amt <= spendable() + yieldedDrops()) {
+    $("fcc-route-amt").textContent = `${fmtXrp(amt - spendable())} XRP`;
+    note.classList.remove("hidden");
+  } else note.classList.add("hidden");
+}
+
+$("btn-send-confirm").addEventListener("click", async () => {
+  const dest = $("send-dest").value.trim();
+  const amt = parseXrp($("send-amount").value);
+  const valid = (xrpl.isValidClassicAddress ? xrpl.isValidClassicAddress(dest) : /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(dest));
+  if (!valid) return toast("Invalid recipient address");
+  if (!amt || amt <= 0n) return toast("Enter an amount");
+  if (dest === S.wallet.address) return toast("That's your own address");
+  const liquid = spendable();
+  if (amt > liquid + yieldedDrops()) return toast("Insufficient balance");
+
+  const fccPart = amt > liquid ? amt - liquid : 0n;
+  const userPart = amt - fccPart;
+  const links = [];
+
+  try {
+    if (fccPart === 0n) {
+      const p = runSteps(["Signing transaction", "Submitting to XRP Ledger", "Awaiting validation"]);
+      p.at(0);
+      const tx = { TransactionType: "Payment", Account: S.wallet.address, Destination: dest, Amount: userPart.toString() };
+      const prepared = await S.client.autofill(tx);
+      p.at(1);
+      const signed = S.wallet.sign(prepared);
+      p.at(2);
+      const res = await S.client.submitAndWait(signed.tx_blob);
+      const code = res.result.meta?.TransactionResult;
+      if (code !== "tesSUCCESS") throw new Error(code);
+      links.push({ label: "XRPL transaction", hash: res.result.hash, url: XRPL_EXPLORER + res.result.hash });
+      p.done();
+      await pushActivity({ k: "send", amt: amt.toString(), note: `To ${short(dest, 6, 4)}`, links });
+    } else {
+      const p = runSteps([
+        userPart > 0n ? "Paying from wallet balance" : "Preparing settlement",
+        "Flare CC settling from yield reserve",
+        "Rebalancing FXRP position",
+      ]);
+      p.at(0);
+      if (userPart > 0n) {
+        const tx = { TransactionType: "Payment", Account: S.wallet.address, Destination: dest, Amount: userPart.toString() };
+        const prepared = await S.client.autofill(tx);
+        const signed = S.wallet.sign(prepared);
+        const res = await S.client.submitAndWait(signed.tx_blob);
+        if (res.result.meta?.TransactionResult !== "tesSUCCESS") throw new Error(res.result.meta?.TransactionResult);
+        links.push({ label: "Wallet payment", hash: res.result.hash, url: XRPL_EXPLORER + res.result.hash });
+      }
+      const r = await FCC.spendViaFcc(S.wallet.address, dest, fccPart, (i) => p.at(i + 1));
+      links.push({ label: "FCC settlement", hash: r.xrplHash, url: XRPL_EXPLORER + r.xrplHash });
+      if (r.unstakeTx) links.push({ label: "Vault rebalance", hash: r.unstakeTx, url: EVM_EXPLORER + r.unstakeTx });
+      p.done();
+      await pushActivity({ k: "fcc_send", amt: amt.toString(), note: `To ${short(dest, 6, 4)} · ${fmtXrp(fccPart)} via yield reserve`, links });
+    }
+    await Promise.all([fetchLedgerBalance(), refreshYield()]);
+    renderHome();
+    showSuccess("Payment sent", `${fmtXrp(amt)} XRP to ${short(dest, 8, 6)}`, links);
+  } catch (e) {
+    console.error(e);
+    toast(`Send failed: ${e.message || e}`);
+    show("view-send");
+  }
+});
+
+// ───────────────────────────────────────── yield manage
+function openYieldView(mode) {
+  S.yieldMode = mode;
+  const titles = { enable: "Enable yield", add: "Add to yield", withdraw: "Withdraw yield" };
+  $("yieldmg-title").textContent = titles[mode];
+  $("yield-amount").value = "";
+  if (mode === "withdraw") {
+    $("yieldmg-amt-label").textContent = "Amount to withdraw";
+    $("yieldmg-sub").textContent = "Withdraw instantly from your yield reserve. Accrued yield is paid out proportionally.";
+    $("yield-avail").textContent = `In yield ${fmtXrp(yieldedDrops())} XRP · Earned +${fmtXrpWei(accruedWeiNow(), 8)}`;
+  } else {
+    $("yieldmg-amt-label").textContent = "Amount to yield";
+    $("yieldmg-sub").textContent = "Move XRP into your yield reserve. It stays spendable — Flax settles payments from it instantly when needed.";
+    $("yield-avail").textContent = `Available ${fmtXrp(spendable())} XRP`;
+  }
+  $("tee-hash-tail").textContent = short(FCC.CONFIG.TEE.codeHash, 10, 6);
+  show("view-yieldmg");
+}
+$("btn-enable-yield").addEventListener("click", () => openYieldView("enable"));
+$("btn-yield").addEventListener("click", () => openYieldView(yieldedDrops() > 0n ? "add" : "enable"));
+$("btn-add-yield").addEventListener("click", () => openYieldView("add"));
+$("btn-withdraw-yield").addEventListener("click", () => openYieldView("withdraw"));
+$("yield-max").addEventListener("click", () => {
+  const max = S.yieldMode === "withdraw" ? yieldedDrops() : spendable();
+  $("yield-amount").value = fmtXrp(max).replaceAll(",", "");
+});
+
+$("btn-yield-go").addEventListener("click", async () => {
+  const amt = parseXrp($("yield-amount").value);
+  if (!amt || amt <= 0n) return toast("Enter an amount");
+
+  try {
+    if (S.yieldMode === "withdraw") {
+      if (amt > yieldedDrops()) return toast("Exceeds yielded balance");
+      const p = runSteps(["FCC custody releasing XRP + yield", "Unstaking FXRP from strategies", "Unwrapping FXRP → XRP"]);
+      p.at(0);
+      const r = await FCC.unyield(S.wallet.address, amt, (i) => p.at(i));
+      p.done();
+      const links = [
+        { label: "XRPL payout", hash: r.xrplHash, url: XRPL_EXPLORER + r.xrplHash },
+        { label: "Vault unstake", hash: r.unstakeTx, url: EVM_EXPLORER + r.unstakeTx },
+      ];
+      await pushActivity({ k: "yield_out", amt: r.payoutDrops.toString(), note: `Incl. accrued yield`, links });
+      await Promise.all([fetchLedgerBalance(), refreshYield()]);
+      renderHome();
+      showSuccess("Withdrawn", `${fmtXrp(r.payoutDrops)} XRP returned to your wallet (yield included)`, links);
+    } else {
+      if (amt > spendable()) return toast("Exceeds available balance");
+      const first = yieldedDrops() === 0n;
+      const p = runSteps(["Transferring XRP to FCC custody", "TEE attestation · minting FXRP", "Deploying to yield strategies"]);
+      p.at(0);
+      const r = await FCC.enableYield(S.wallet, amt, (i) => p.at(i));
+      p.done();
+      const links = [
+        { label: "Custody transfer", hash: r.xrplHash, url: XRPL_EXPLORER + r.xrplHash },
+        { label: "FXRP mint", hash: r.mintTx, url: EVM_EXPLORER + r.mintTx },
+        { label: "Vault stake", hash: r.stakeTx, url: EVM_EXPLORER + r.stakeTx },
+      ];
+      await pushActivity({ k: first ? "yield_on" : "yield_add", amt: amt.toString(), note: `70% → FXRP strategies`, links });
+      await Promise.all([fetchLedgerBalance(), refreshYield()]);
+      renderHome();
+      showSuccess(first ? "Yield enabled" : "Added to yield",
+        `${fmtXrp(amt)} XRP now earning 5.20% APY`, links);
+    }
+  } catch (e) {
+    console.error(e);
+    toast(`Failed: ${e.message || e}`.slice(0, 80));
+    show("view-home");
+  }
+});
+
+// ───────────────────────────────────────── settings
+$("btn-settings").addEventListener("click", async () => {
+  $("set-address").textContent = short(S.wallet.address, 10, 8);
+  $("set-address").onclick = () => copy(S.wallet.address, "Address copied");
+  const T = FCC.CONFIG.TEE;
+  $("fcc-machine").textContent = short(T.machineId, 8, 6);
+  $("fcc-machine").onclick = () => copy(T.machineId);
+  $("fcc-ext").textContent = T.extensionId;
+  $("fcc-codehash").textContent = short(T.codeHash, 10, 8);
+  $("fcc-codehash").onclick = () => copy(T.codeHash);
+  $("fcc-custody").textContent = short(FCC.CONFIG.CUSTODY_ADDRESS, 8, 6);
+  $("fcc-custody").onclick = () => copy(FCC.CONFIG.CUSTODY_ADDRESS);
+  $("fcc-fxrp").textContent = short(FCC.CONFIG.FXRP_ADDRESS, 8, 6);
+  $("fcc-fxrp").href = EVM_ADDR_EXPLORER + FCC.CONFIG.FXRP_ADDRESS;
+  $("fcc-vault").textContent = short(FCC.CONFIG.VAULT_ADDRESS, 8, 6);
+  $("fcc-vault").href = EVM_ADDR_EXPLORER + FCC.CONFIG.VAULT_ADDRESS;
+  $("seed-reveal").classList.add("hidden");
+  show("view-settings");
+  try {
+    const [cb, ys] = await Promise.all([FCC.custodyBalance(), FCC.getYieldState(S.wallet.address)]);
+    $("fcc-custody-bal").textContent = `${fmtXrp(cb)} XRP`;
+    $("fcc-tvl").textContent = `${fmtXrpWei(ys.totalStakedWei, 2)} FXRP`;
+  } catch {}
+});
+$("btn-reveal-seed").addEventListener("click", async () => {
+  const { flax_seed } = await store.get("flax_seed");
+  const el = $("seed-reveal");
+  el.textContent = flax_seed;
+  el.classList.toggle("hidden");
+});
+$("btn-reset").addEventListener("click", async () => {
+  if (!confirm("Remove this wallet from the device? Make sure your seed is backed up.")) return;
+  await store.clear();
+  location.reload();
+});
+
 // ───────────────────────────────────────── go
 boot();
