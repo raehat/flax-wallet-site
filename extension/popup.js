@@ -104,3 +104,69 @@ async function refreshYield() {
   }
 }
 
+// ───────────────────────────────────────── activity
+async function loadActivity() {
+  const { flax_activity } = await store.get("flax_activity");
+  S.activity = flax_activity || [];
+}
+async function pushActivity(entry) {
+  S.activity.unshift({ ...entry, ts: Date.now() });
+  S.activity = S.activity.slice(0, 25);
+  await store.set({ flax_activity: S.activity });
+}
+const ACT_META = {
+  recv:      { ico: "↓", cls: "in",  title: "Received" },
+  send:      { ico: "↑", cls: "out", title: "Sent" },
+  fcc_send:  { ico: "↑", cls: "out", title: "Sent via Flare CC" },
+  yield_on:  { ico: "◈", cls: "yld", title: "Yield enabled" },
+  yield_add: { ico: "◈", cls: "yld", title: "Added to yield" },
+  yield_out: { ico: "◈", cls: "yld", title: "Yield withdrawn" },
+  fund:      { ico: "↓", cls: "in",  title: "Wallet activated" },
+};
+function renderActivity() {
+  const list = $("activity-list");
+  list.querySelectorAll(".act-item").forEach((n) => n.remove());
+  $("activity-empty").style.display = S.activity.length ? "none" : "";
+  for (const a of S.activity) {
+    const m = ACT_META[a.k] || ACT_META.send;
+    const el = document.createElement("a");
+    el.className = "act-item";
+    if (a.links?.length) { el.href = a.links[0].url; el.target = "_blank"; el.rel = "noopener"; }
+    const when = new Date(a.ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const sign = m.cls === "in" ? "+" : m.cls === "out" ? "−" : "";
+    el.innerHTML = `
+      <span class="act-ico ${m.cls}">${m.ico}</span>
+      <span class="act-main"><span class="act-title">${m.title}</span><span class="act-sub">${a.note || when}</span></span>
+      <span class="act-amt ${m.cls === "in" ? "in" : ""}">${sign}${fmtXrp(a.amt)} XRP</span>`;
+    list.appendChild(el);
+  }
+}
+
+// ───────────────────────────────────────── home render
+function renderHome() {
+  const total = S.ledgerDrops + yieldedDrops();
+  $("balance-total").innerHTML = `${fmtXrp(total, 6)}<span class="unit">XRP</span>`;
+  const hasYield = yieldedDrops() > 0n;
+  $("balance-sub").textContent = hasYield
+    ? `Available ${fmtXrp(S.ledgerDrops)} · Yielding ${fmtXrp(yieldedDrops())}`
+    : `Available ${fmtXrp(S.ledgerDrops)}`;
+
+  $("earn-pill").classList.toggle("hidden", !hasYield);
+  $("yield-promo").classList.toggle("hidden", hasYield);
+  $("yield-active").classList.toggle("hidden", !hasYield);
+  if (hasYield) $("yc-principal").textContent = `${fmtXrp(yieldedDrops())} XRP`;
+  renderActivity();
+}
+
+// live yield counter
+setInterval(() => {
+  if (!S.tick || S.tick.principalWei === 0n) return;
+  const acc = accruedWeiNow();
+  if (!$("yield-active").classList.contains("hidden")) {
+    $("yc-earned").textContent = `+${fmtXrpWei(acc, 9)} XRP`;
+  }
+  if (!$("earn-pill").classList.contains("hidden")) {
+    $("earn-pill-text").textContent = `Earning 5.20% APY · +${fmtXrpWei(acc, 8)}`;
+  }
+}, 300);
+
