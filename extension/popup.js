@@ -170,3 +170,117 @@ setInterval(() => {
   }
 }, 300);
 
+// ───────────────────────────────────────── boot
+async function boot() {
+  const { flax_seed } = await store.get("flax_seed");
+  if (!flax_seed) { show("view-onboarding"); return; }
+  S.wallet = xrpl.Wallet.fromSeed(flax_seed);
+  await loadActivity();
+  renderHome();          // paint cached shell immediately
+  show("view-home");
+  try {
+    await connect();
+    await Promise.all([fetchLedgerBalance(), refreshYield()]);
+    renderHome();
+  } catch (e) {
+    console.error(e);
+    toast("Network error — retrying…");
+    setTimeout(boot, 2500);
+  }
+}
+
+// ───────────────────────────────────────── onboarding
+$("btn-create").addEventListener("click", async () => {
+  show("view-creating");
+  try {
+    $("creating-title").textContent = "Creating your wallet…";
+    $("creating-sub").textContent = "Generating keys on this device";
+    await connect();
+    const w = xrpl.Wallet.generate();
+    await store.set({ flax_seed: w.seed, flax_address: w.address });
+    S.wallet = w;
+    $("creating-sub").textContent = "Activating on the XRP Ledger…";
+    const funded = await S.client.fundWallet(w);
+    S.ledgerDrops = BigInt(xrpl.xrpToDrops(funded.balance));
+    await pushActivity({ k: "fund", amt: S.ledgerDrops.toString(), note: "Account activated" });
+    await refreshYield();
+    renderHome();
+    show("view-home");
+    toast("Wallet ready");
+  } catch (e) {
+    console.error(e);
+    toast("Creation failed — try again");
+    show("view-onboarding");
+  }
+});
+
+$("btn-goto-import").addEventListener("click", () => show("view-import"));
+$("btn-import").addEventListener("click", async () => {
+  const seed = $("import-seed").value.trim();
+  try {
+    const w = xrpl.Wallet.fromSeed(seed);
+    await store.set({ flax_seed: seed, flax_address: w.address });
+    S.wallet = w;
+    show("view-creating");
+    $("creating-title").textContent = "Importing…";
+    $("creating-sub").textContent = "Syncing with the XRP Ledger";
+    await connect();
+    await Promise.all([fetchLedgerBalance(), refreshYield(), loadActivity()]);
+    renderHome();
+    show("view-home");
+  } catch (e) {
+    toast("Invalid seed");
+  }
+});
+
+// back buttons
+document.querySelectorAll("[data-nav]").forEach((b) =>
+  b.addEventListener("click", () => show(b.dataset.nav)));
+
+// ───────────────────────────────────────── receive
+$("btn-receive").addEventListener("click", () => {
+  $("receive-address").textContent = S.wallet.address;
+  show("view-receive");
+});
+$("btn-copy-address").addEventListener("click", () => copy(S.wallet.address, "Address copied"));
+
+// ───────────────────────────────────────── progress helper
+function runSteps(labels) {
+  const box = $("progress-steps");
+  box.innerHTML = labels.map((l, i) =>
+    `<div class="step" id="step-${i}"><span class="bullet"><span class="idx">${i + 1}</span></span><span>${l}</span></div>`).join("");
+  show("view-progress");
+  return {
+    at(i) {
+      labels.forEach((_, j) => {
+        const el = $(`step-${j}`);
+        el.classList.toggle("doing", j === i);
+        if (j < i) { el.classList.add("done"); el.querySelector(".bullet").innerHTML = "✓"; }
+        else if (j === i) { el.querySelector(".bullet").innerHTML = `<div class="spinner"></div>`; }
+      });
+    },
+    done() {
+      labels.forEach((_, j) => {
+        const el = $(`step-${j}`);
+        el.classList.add("done"); el.classList.remove("doing");
+        el.querySelector(".bullet").innerHTML = "✓";
+      });
+    },
+  };
+}
+
+function showSuccess(title, sub, links) {
+  $("success-title").textContent = title;
+  $("success-sub").textContent = sub;
+  $("success-links").innerHTML = (links || []).map((l) =>
+    `<a href="${l.url}" target="_blank" rel="noopener"><span>${l.label}</span><span class="mono">${short(l.hash, 6, 6)} ↗</span></a>`).join("");
+  show("view-success");
+}
+$("btn-success-done").addEventListener("click", async () => {
+  show("view-home");
+  await Promise.all([fetchLedgerBalance(), refreshYield()]);
+  renderHome();
+});
+
+// ───────────────────────────────────────── go
+boot();
