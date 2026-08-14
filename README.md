@@ -47,3 +47,57 @@ how the pieces fit together and how to run them.
   on end to end (deploy → register → attest → dispatch instructions →
   TEE-signed result).
 
+## Running the extension
+
+1. `cd extension`
+2. Open `chrome://extensions`, enable **Developer mode**, click **Load
+   unpacked**, select the `extension/` folder.
+3. Open the popup, **Create new wallet** — this generates XRPL testnet keys
+   client-side and funds the account via the public testnet faucet.
+4. **Enable yield** moves XRP into custody, mints FXRP for 70% of it, and
+   stakes that into `FlaxYieldVault`. **Send** amounts beyond the liquid
+   balance auto-route through the same custody/vault path. Every step links
+   to a real Coston2 / XRPL testnet transaction in the activity feed.
+
+No build step — MV3 extensions can't load remote scripts, so `xrpl.js` and
+`ethers.js` are vendored locally under `extension/vendor/`.
+
+## Running the TEE extension
+
+`tee-extension/` is deployed independently of the Chrome wallet — it's the
+proof that the custody model can run as an attested TEE rather than a plain
+signer. Full setup (Docker, ngrok, Coston2 registration, indexer config) is
+in `tee-extension/README.md`; short version:
+
+```bash
+git clone https://github.com/flare-foundation/fce-sign
+cp tee-extension/contracts/InstructionSender.sol   fce-sign/contracts/
+cp tee-extension/python/app/{config,handlers}.py    fce-sign/python/app/
+cd fce-sign
+./scripts/use-chain.sh local coston2 python
+./scripts/pre-build.sh      # deploys the contract, registers the extension
+./scripts/start-services.sh # builds + runs the TEE + proxy locally
+./scripts/post-build.sh     # attests and registers the TEE machine on-chain
+```
+
+Once registered, calling `requestAddress()` / `award()` on the deployed
+contract dispatches an instruction through Flare's `TeeExtensionRegistry`,
+which routes it to the running TEE and posts a signed result back.
+
+## What's real vs. simulated in this build
+
+Worth stating plainly rather than leaving it to be discovered:
+
+- The **contracts are real deployments** on Coston2 — `FXRP` and
+  `FlaxYieldVault` execute genuine mint/stake/unstake logic, not mocks.
+- The **XRPL side is real** — wallet generation, balances, and payments all
+  go through the public XRPL testnet, not a local simulation.
+- The **`tee-extension/`** is a real, independently-registered TEE on
+  Coston2 (attested, `PRODUCTION` status), proving the custody model works
+  end to end as a TEE-dispatched instruction.
+- The **Chrome extension's yield flow**, for this build, calls the custody
+  and vault operations directly with an operator key rather than routing
+  through the TEE-dispatch path that `tee-extension/` demonstrates
+  separately. Wiring the wallet's yield calls through the live TEE dispatch
+  pipeline (`InstructionSender` → registry → TEE → proxy) is the natural
+  next step, not yet done in this build.
