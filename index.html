@@ -189,6 +189,129 @@
   </div>
 </section>
 
+<!-- ═══════════════════ INSTALL ═══════════════════ -->
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-tag">Get it running</div>
+      <h2>Not on the Web Store yet — install takes 40 seconds</h2>
+      <p>Flax is a testnet build, loaded the same way developers preview extensions before publishing.</p>
+    </div>
+
+    <div class="install-shell">
+      <div class="install-inner">
+        <div class="install-steps">
+          <div class="step-row">
+            <div class="step-num">1</div>
+            <div class="step-body"><b>Download &amp; unzip</b><span>Grab <code>flax-extension.zip</code> and extract it anywhere on your machine.</span></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div class="step-body"><b>Open Chrome extensions</b><span>Go to <code>chrome://extensions</code> in the address bar.</span></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">3</div>
+            <div class="step-body"><b>Turn on Developer mode</b><span>Toggle it in the top-right corner of the page.</span></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">4</div>
+            <div class="step-body"><b>Load unpacked</b><span>Click <b>Load unpacked</b> and select the unzipped <code>flax-extension</code> folder.</span></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">5</div>
+            <div class="step-body"><b>Pin &amp; open</b><span>Click the puzzle icon, pin Flax, then click it and hit <b>Create new wallet</b>.</span></div>
+          </div>
+          <a class="btn primary block" style="margin-top:22px; justify-content:center;" href="flax-extension.zip">↓ Download flax-extension.zip</a>
+        </div>
+        <div class="install-visual">
+          <div class="browser-mock">
+            <div class="bm-bar">
+              <span class="bm-dot" style="background:#ff5f57"></span>
+              <span class="bm-dot" style="background:#febc2e"></span>
+              <span class="bm-dot" style="background:#28c840"></span>
+              <div class="bm-url"></div>
+              <span class="bm-puzzle">⬡</span>
+              <img class="bm-flax" src="img/icon48.png" alt="Flax icon"/>
+            </div>
+            <div class="bm-panel">
+              <div class="bm-row"><img src="img/icon48.png" alt=""/><span>Flax</span><div class="bm-toggle"></div></div>
+              <div class="bm-row" style="opacity:.35"><div style="width:22px;height:22px;border-radius:6px;background:#2a2a35"></div><span>Other extension</span><div class="bm-toggle" style="background:#3a3a45"></div></div>
+              <div class="bm-row" style="opacity:.35"><div style="width:22px;height:22px;border-radius:6px;background:#2a2a35"></div><span>Other extension</span><div class="bm-toggle" style="background:#3a3a45"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FAQ ═══════════════════ -->
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-tag">Questions</div>
+      <h2>FAQ</h2>
+      <p>The short answers. The full mechanics are in the <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet/" target="_blank" rel="noopener">whitepaper ↗</a>.</p>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary><span>Is Flax custodial?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>No. Flax is non-custodial. FlaxManagerCC — the only component with control over pooled funds — runs inside a Trusted Execution Environment and is architecturally restricted to rebalancing and fulfilling user spending requests. It cannot deny a spending request or redirect funds elsewhere.</p>
+          <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet//security-and-custody" target="_blank" rel="noopener">Security &amp; Custody ↗</a>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>Can I spend my XRP immediately, even with yield enabled?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>Yes. Spending is served out of the unutilized lot, which is targeted to hold roughly 30% of TVL at all times (<code class="mono">u = 0.7</code>).</p>
+          <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet//flow-of-funds" target="_blank" rel="noopener">Fund Flows &amp; Rebalancing ↗</a>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>What happens to my deposit the moment I enable yield?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>It's allocated entirely to the unutilized lot first. The hourly rebalancing job then gradually moves the pool toward the target utilization of <code class="mono">0.7</code>, rather than force-deploying any single deposit immediately.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>Where does the yield actually come from?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>From staking strategies on the Flare Network, accessed through FXRP — a 1:1, redeemable representation of XRP that's compatible with Flare's smart contracts.</p>
+          <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet//fxrp" target="_blank" rel="noopener">FXRP ↗</a>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>What is the utilization factor, and can it change?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p><code class="mono">u</code> is a dynamic, smart-contract-embedded parameter currently set to <code class="mono">0.7</code>. It determines the target split between the utilized (yield-generating) and unutilized (liquid) lots, and is designed to be adjustable in the future.</p>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>What triggers rebalancing?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>An hourly job checks whether <code class="mono">u</code> has moved outside the <code class="mono">[0.6, 0.8]</code> band. If so, it moves just enough funds between lots to bring <code class="mono">u</code> back to <code class="mono">0.7</code>.</p>
+          <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet//flow-of-funds" target="_blank" rel="noopener">Fund Flows &amp; Rebalancing ↗</a>
+        </div>
+      </details>
+
+      <details class="faq-item">
+        <summary><span>Why is Flare Confidential Compute (FCC) necessary?</span><span class="faq-x">＋</span></summary>
+        <div class="faq-a">
+          <p>Standard smart contracts are fully public — including their logic and any data they touch. FCC uses a TEE to let FlaxManagerCC hold a private key and execute logic that no external party, including Flax itself, can view or alter.</p>
+          <a class="inline-link" href="https://ember-7.gitbook.io/flaxwallet//how-flax-uses-flare-cc" target="_blank" rel="noopener">FCC ↗</a>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
 <div class="disclaimer">
   Flax runs on XRP Ledger testnet and Flare Coston2 testnet. Figures shown are test values, not real funds. Built to demonstrate a custody + yield architecture on Flare Confidential Compute — not audited, not financial advice.
 </div>
