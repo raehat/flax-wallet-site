@@ -58,6 +58,43 @@
 </div>
 
 <!-- ═══════════════════ FEATURES ═══════════════════ -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-tag">What it does</div>
+      <h2>A wallet first. A yield engine second.</h2>
+      <p>Send, receive, hold — same as any XRP wallet. The difference only shows up when you want it to.</p>
+    </div>
+
+    <div class="feature-row">
+      <div class="fr-text">
+        <div class="fr-num">01</div>
+        <h3>Enable yield in one tap</h3>
+        <p>Move any amount of your balance into the yield reserve. Flax routes 70% into FXRP and deploys it to the FlaxYieldVault strategy contract on Flare; 30% stays as a liquid buffer under the same position.</p>
+        <div class="fr-points">
+          <div class="fr-point"><span class="mk">＋</span>Position tracked on-chain, keyed to your XRPL address</div>
+          <div class="fr-point"><span class="mk">＋</span>Every deposit produces a verifiable custody + mint + stake receipt</div>
+          <div class="fr-point"><span class="mk">＋</span>No lockups — add or withdraw whenever</div>
+        </div>
+      </div>
+      <div class="fr-shot"><img src="img/shot-yield.png" alt="Enable yield screen showing the 70/30 split and 5.20% APY" /></div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="fr-text">
+        <div class="fr-num">02</div>
+        <h3>Spend it like it was never staked</h3>
+        <p>Send a payment larger than your liquid balance and Flax settles the gap from your yield reserve automatically. The buffer pays instantly; the vault rebalances by unstaking FXRP behind it. No waiting on an unstake window.</p>
+        <div class="fr-points">
+          <div class="fr-point"><span class="mk">＋</span>One balance, one send flow — yielded or not</div>
+          <div class="fr-point"><span class="mk">＋</span>Rebalance transaction linked in every receipt</div>
+          <div class="fr-point"><span class="mk">＋</span>Withdraw the rest anytime, yield included</div>
+        </div>
+      </div>
+      <div class="fr-shot"><img src="img/shot-send.png" alt="Send screen showing a payment auto-routed through Flare CC" /></div>
+    </div>
+  </div>
+</section>
 
 <div class="disclaimer">
   Flax runs on XRP Ledger testnet and Flare Coston2 testnet. Figures shown are test values, not real funds. Built to demonstrate a custody + yield architecture on Flare Confidential Compute — not audited, not financial advice.
