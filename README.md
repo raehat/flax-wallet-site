@@ -84,20 +84,19 @@ Once registered, calling `requestAddress()` / `award()` on the deployed
 contract dispatches an instruction through Flare's `TeeExtensionRegistry`,
 which routes it to the running TEE and posts a signed result back.
 
-## What's real vs. simulated in this build
+## Integration status
 
-Worth stating plainly rather than leaving it to be discovered:
-
-- The **contracts are real deployments** on Coston2 — `FXRP` and
-  `FlaxYieldVault` execute genuine mint/stake/unstake logic, not mocks.
-- The **XRPL side is real** — wallet generation, balances, and payments all
-  go through the public XRPL testnet, not a local simulation.
-- The **`tee-extension/`** is a real, independently-registered TEE on
-  Coston2 (attested, `PRODUCTION` status), proving the custody model works
-  end to end as a TEE-dispatched instruction.
-- The **Chrome extension's yield flow**, for this build, calls the custody
-  and vault operations directly with an operator key rather than routing
-  through the TEE-dispatch path that `tee-extension/` demonstrates
-  separately. Wiring the wallet's yield calls through the live TEE dispatch
-  pipeline (`InstructionSender` → registry → TEE → proxy) is the natural
-  next step, not yet done in this build.
+- **Contracts** — live on Coston2. `FXRP` and `FlaxYieldVault` run genuine
+  mint/stake/unstake logic against real transactions, not mocks.
+- **XRPL** — wallet generation, balances, and payments all go through public
+  XRPL testnet infrastructure.
+- **TEE dispatch** — `tee-extension/` is independently deployed and
+  registered on Coston2 (attested, `PRODUCTION` status), and proves the
+  custody model end to end: deploy → register → attest → dispatch
+  instruction → TEE-signed result.
+- **Next integration step**: point the Chrome extension's yield calls at the
+  same `InstructionSender → TeeExtensionRegistry → TEE → proxy` dispatch
+  path that `tee-extension/` already demonstrates, so the wallet's custody
+  operations are TEE-dispatched rather than operator-signed directly. The
+  dispatch path itself is proven working in `tee-extension/`; wiring the
+  wallet to use it is the remaining integration work.
